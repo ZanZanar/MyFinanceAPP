@@ -1,0 +1,112 @@
+#:import utils kivy.utils
+
+# Описываем, как выглядит наше всплывающее окно
+<AddPopup>:
+    title: "Новая запись"
+    size_hint: 0.8, 0.4
+    
+    # СВЯЗКА: говорим, что переменная amount_input из Python 
+    # соответствует виджету с id: amount_field в этом файле
+    amount_input: amount_field
+    category_input: category_field
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 10
+        spacing: 10
+
+        TextInput:
+            id: amount_field          # Уникальное имя для ссылки
+            hint_text: "Сумма"        # Текст-подсказка внутри поля
+            multiline: False          # Запрещаем перенос строк (Enter сработает как ввод)
+            input_filter: 'float'     # Разрешаем только ввод чисел
+
+        TextInput:
+            id: category_field
+            hint_text: "Категория"
+            multiline: False
+
+        Button:
+            text: 'Сохранить данные'
+            size_hint_y: None
+            height: '40dp'
+            # root ссылается на класс AddPopup. Вызываем его метод save()
+            on_release: root.save()
+<GraphPopup>:
+    title: "Аналитика финансов"
+    size_hint: 0.9, 0.9  # Занимает 90% экрана
+    BoxLayout:
+        orientation: 'vertical'
+        Button:
+            text: "Закрыть"
+            size_hint_y: None
+            height: '40dp'
+            on_release: root.dismiss()
+        Accordion:
+            AccordionItem: 
+                title: 'Финансы'
+                BoxLayout:
+                    id: all_graphs
+            AccordionItem:
+                title: 'Расход'
+                BoxLayout:
+                    id: ex_graphs
+            AccordionItem:
+                title: 'Доход'
+                BoxLayout:
+                    id: in_graphs
+            AccordionItem:
+                title: 'Доходы и расходы'
+                BoxLayout:
+                    id: com_graphs
+
+# Главный экран
+<MainScreen>:
+    canvas.before: 
+        Rectangle: 
+            source: root.bg_path
+            pos: self.pos
+            size: self.size
+            
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint: (0.15, 1)
+        padding: 5
+        spacing: 10
+        Button:
+            text: 'доход'
+            on_press: root.open_popup('доход')
+        Button:
+            text: 'расход'
+            on_press: root.open_popup('расход')
+        Button:
+            text: 'показать \n грифик'
+            on_press: root.show_graphs()
+
+    Label:
+        text: 'график расходов'
+        font_size: 25
+        pos_hint: {'center_x': 0.5, 'center_y': 0.9}
+        color: utils.get_color_from_hex('#a17237')
+    Label: 
+        id: last_entry
+        text: 'Здесь будет последня запись'
+        font_size: 15
+        pos_hint: {'center_x': 0.5, 'center_y':.2}
+    Label:
+        id: sum_stat
+        text: 'Общая сумма'
+        font_size: 20
+        pos_hint: {'center_x': 0.5, 'center_y': .75}
+
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint: (0.4,0.05)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.7}
+        spacing: 2
+        Button:
+            text: "доход"
+            on_press: root.show_statistics("доход")
+        Button:
+            text: "расход"
+            on_press: root.show_statistics("расход")

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# Переменные окружения
+.env
+test.json
+
+# VS Code
+.vscode/
+
+# Сборки
+build/
+dist/
+*.egg-info/
+test/
+data/finance_data.json
+# Логи
+*.log
