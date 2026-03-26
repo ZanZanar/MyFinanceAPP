@@ -20,7 +20,7 @@ from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg # noqa
 # Подключаем наши модули
 from src.modules.data_manager import FILE # noqa
 from src.modules.graphs import GraphService # noqa
-from src.modules.data_manager import prepare_graph_data, save_json # noqa
+from src.modules.data_manager import prepare_graph_data, save_json, FinanceManager # noqa
 
 
 class AddPopup(Popup):
@@ -30,24 +30,29 @@ class AddPopup(Popup):
     caller = ObjectProperty(None) # Ссылка на MainScreen для обновления истории
     op_type = StringProperty("")  # "доход" или "расход"
 
-    def save(self) -> None:
+    def save(self):
         """Валидация, сохранение в JSON и закрытие окна"""
         try:
             val = float(self.amount_input.text)
             cat = self.category_input.text.strip()
             if not cat: 
                 return
-            
-            save_json(val,cat,self.op_type)
+        except ValueError:
+            print("Ошибка: сумма должна быть числом!")
+            return
+        try:
+            App.get_running_app().management.add_transaction(val, cat, self.op_type)
+            #save_json(val,cat,self.op_type)
             
             # Просим главный экран обновить список последних записей
             if self.caller:
                 self.caller.update_history()
-                
-            self.dismiss() # Закрываем попап
+        except Exception as e:
+            print(f"ошибка{e}")
             
-        except ValueError:
-            print("Ошибка: сумма должна быть числом!")
+        self.dismiss() # Закрываем попап
+            
+        
 
 class GraphPopup(Popup):
     """Окно с Accordion для отображения графиков"""
@@ -59,39 +64,32 @@ class MainScreen(FloatLayout):
     # свойство, которое будет хранить путь к фону
     bg_path = StringProperty(BG_SOURCE)
     
-    def open_popup(self, operation_type: str) -> None:
+    def open_popup(self, operation_type: str):
         """Открывает окно ввода с предзаданным типом операции"""
         p = AddPopup(op_type=operation_type, caller=self)
         p.title = f"Добавить {operation_type}"
         p.open()
 
-    def update_history(self) -> None:
+    def update_history(self):
         """Умный сбор последних 5 записей из JSON для отображения на экране"""
-        if not FILE.exists():
-            return
+      
+        manager = App.get_running_app().management
+        count = 0
+        lines = ["Последние операции:"]
         
-        try:
-            with open(FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            count = 0
-            lines = ["Последние операции:"]
-            
-            # идем по датам с конца (reversed)
-            for d in reversed(data.keys()):
-                # Идем по элементам внутри дня с конца
-                for item in reversed(data[d]["элементы"]):
-                    lines.append(f"{d} | {item['операция']}: {item['категория']} - {item['сумма']}р")
-                    count += 1
-                    if count >= 5: 
-                        break
+        # идем по датам с конца (reversed)
+        for d in reversed(manager.storage.keys()):
+            # Идем по элементам внутри дня с конца
+            for item in reversed(manager.storage.item):
+                lines.append(f"{d} | {item['операция']}: {item['категория']} - {item['сумма']}р")
+                count += 1
                 if count >= 5: 
                     break
-            
-            self.ids.last_entry.text = "\n".join(lines)
-        except Exception as e:
-            print(f"Ошибка обновления истории: {e}")
-            
+            if count >= 5: 
+                break
+        
+        self.ids.last_entry.text = "\n".join(lines)
+        pass
     def show_statistics(self,button):
         
         data = prepare_graph_data()
@@ -100,7 +98,7 @@ class MainScreen(FloatLayout):
         else:
             self.ids.sum_stat.text =f"{sum(data.expenses)}"
 
-    def show_graphs(self) -> None:
+    def show_graphs(self):
         """Генерирует графики и вставляет их в GraphPopup"""
         p = GraphPopup()
         service = GraphService() # Инициализируем сбор данных
@@ -113,6 +111,7 @@ class MainScreen(FloatLayout):
 
 class MyApp(App):
     def build(self):
+        self.management = FinanceManager()
         # Подгружаем дизайн из ui.kv
         Builder.load_file('ui.kv')
         return MainScreen()
