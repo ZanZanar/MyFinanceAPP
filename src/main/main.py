@@ -80,8 +80,10 @@ class MainScreen(FloatLayout):
         # идем по датам с конца (reversed)
         for d in reversed(manager.storage.keys()):
             # Идем по элементам внутри дня с конца
-            for item in reversed(manager.storage.item):
-                lines.append(f"{d} | {item['операция']}: {item['категория']} - {item['сумма']}р")
+            day = manager.storage[d] # Достаем объект дня
+            f_d = date.fromisoformat(d).strftime("%d-%m-%Y")  # Форматируем дату из ISO (2026-03-17) в RU (17-03)
+            for item in reversed(day.elements):  #  Берем список транзакций одного дня
+                lines.append(f"{f_d} | {item.operation}: {item.category} - {item.amount}р")
                 count += 1
                 if count >= 5: 
                     break
@@ -89,7 +91,7 @@ class MainScreen(FloatLayout):
                 break
         
         self.ids.last_entry.text = "\n".join(lines)
-        pass
+
     def show_statistics(self,button):
         
         data = prepare_graph_data()
