@@ -7,9 +7,8 @@ ROOT_PATH = Path(__file__).resolve().parent.parent.parent
 BG_SOURCE = str(ROOT_PATH / 'assets' / 'bg.png')
 sys.path.insert(0,str(ROOT_PATH)) # Добавили корневую папку в "список поиска"
 
-import json # noqa
-from datetime import date # noqa
 
+from datetime import date # noqa
 from kivy.app import App # noqa
 from kivy.lang import Builder # noqa
 from kivy.properties import ObjectProperty, StringProperty # noqa
@@ -20,7 +19,7 @@ from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg # noqa
 # Подключаем наши модули
 from src.modules.data_manager import FILE # noqa
 from src.modules.graphs import GraphService # noqa
-from src.modules.data_manager import prepare_graph_data, save_json, FinanceManager # noqa
+from src.modules.data_manager import prepare_graph_data, FinanceManager # noqa
 
 
 class AddPopup(Popup):
@@ -41,8 +40,9 @@ class AddPopup(Popup):
             print("Ошибка: сумма должна быть числом!")
             return
         try:
-            App.get_running_app().management.add_transaction(val, cat, self.op_type)
-            #save_json(val,cat,self.op_type)
+            # загружаю add_transaction из основного MyApp(App) с помощью  App.get_running_app() 
+            # FinanceManager загружен в MyApp под атрибутом self.management 
+            App.get_running_app().management.add_transaction(val, cat, self.op_type)    
             
             # Просим главный экран обновить список последних записей
             if self.caller:
@@ -94,9 +94,12 @@ class MainScreen(FloatLayout):
 
     def show_statistics(self,button):
         
+        balance = App.get_running_app().management
         data = prepare_graph_data()
         if button == "доход":
             self.ids.sum_stat.text =f"{sum(data.income)}"
+        elif button == "Баланс":
+            self.ids.sum_stat.text = f"{balance.get_total_balance()}"
         else:
             self.ids.sum_stat.text =f"{sum(data.expenses)}"
 
@@ -113,10 +116,11 @@ class MainScreen(FloatLayout):
 
 class MyApp(App):
     def build(self):
-        self.management = FinanceManager()
+        # загружаем FinanceManager в основной класс kivy для дальнейшего использования через  get_running_app()
+        self.management = FinanceManager()  
         # Подгружаем дизайн из ui.kv
         Builder.load_file('ui.kv')
-        return MainScreen()
+        return MainScreen() 
 
 if __name__ == '__main__':
     # Обязательно создаем папку data, если её нет

@@ -105,8 +105,11 @@
         pos_hint: {'center_x': 0.5, 'center_y': 0.7}
         spacing: 2
         Button:
-            text: "доход"
+            text: "Доход"
             on_press: root.show_statistics("доход")
         Button:
-            text: "расход"
-            on_press: root.show_statistics("расход")
+            text: "Расход"
+            on_press: root.show_statistics("Расход")
+        Button:
+            text: "Баланс"
+            on_press: root.show_statistics("Баланс")
