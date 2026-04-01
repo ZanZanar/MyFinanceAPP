@@ -78,9 +78,9 @@ class MainScreen(FloatLayout):
         lines = ["Последние операции:"]
         
         # идем по датам с конца (reversed)
-        for d in reversed(manager.storage.keys()):
+        for d in reversed(manager.storage.days.keys()):
             # Идем по элементам внутри дня с конца
-            day = manager.storage[d] # Достаем объект дня
+            day = manager.storage.days[d] # Достаем объект дня
             f_d = date.fromisoformat(d).strftime("%d-%m-%Y")  # Форматируем дату из ISO (2026-03-17) в RU (17-03)
             for item in reversed(day.elements):  #  Берем список транзакций одного дня
                 lines.append(f"{f_d} | {item.operation}: {item.category} - {item.amount}р")

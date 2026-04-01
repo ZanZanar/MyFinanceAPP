@@ -87,19 +87,21 @@ class FinanceManager():
     # Метод для загрузки данных из файла
     def load_storage(self) -> Dict[str, DayData]:
         """Загружает данные из JSON файла и возвращает объект FinanceStorage.
-        
         Returns:
             {} Объект с загруженными данными или пустой, если файл не существует.
         """
+        
         if not FILE.exists():  # Если файл не существует
-            return {}  # Возвращаем пустое хранилище
+            return FinanceStorage()  # Возвращаем пустое хранилище
         try:
-            with open(FILE, 'r', encoding='utf-8') as f:  # Открываем файл для чтения
-                raw_data = json.load(f)  # Загружаем JSON
-                return {dt: DayData(**data) for dt, data in raw_data.items()}  # Создаём объект из данных
+            with open(FILE, 'r', encoding='utf-8') as f:   # Открываем файл для чтения
+                raw_data = json.load(f)  # Загружаем JSON  raw_data = dict вида {дата: DayData}
+
+            return FinanceStorage(days=raw_data)  # Оборачиваем словарь в Pydantic-модель
+
         except Exception as e:
             print(f"Ошибка загрузки базы: {e}")
-            return {}
+            return FinanceStorage()
     # Метод для добавления транзакции
     def add_transaction(self, amount: float, category: str, op_type: str):
         """Добавляет новую транзакцию за сегодняшний день.
@@ -109,18 +111,21 @@ class FinanceManager():
             category: Категория транзакции.
             op_type: Тип операции ("доход" или "расход").
         """
-        today = date.today().isoformat()  # Получаем сегодняшнюю дату в формате ISO
+        today = date.today().isoformat()  # Получаем сегодняшнюю дату в формате ISO YYYY-MM-DD 
         
         # Если дня нет, создаем новый DayData
-        if today not in self.storage:
-            self.storage[today] = DayData()
+        if today not in self.storage.days:
+            self.storage.days[today] = DayData()
         
         # Получаем или создаём данные за сегодня
-        day = self.storage[today]  
+        day = self.storage.days[today]  
         
         # Создаём новую транзакцию
-        new_trans = Transaction(operation=op_type, category=category, amount=amount)
-        day.elements.append(new_trans)  # Добавляем в список
+        new_trans = Transaction(operation=op_type, 
+                                category=category, 
+                                amount=amount)
+        
+        day.elements.append(new_trans)  # Добавляем в список операций дня
         
         # Обновляем статистику
         if op_type == "доход":  # Если доход
@@ -136,7 +141,7 @@ class FinanceManager():
         # Превращаем все объекты DayData обратно в словари для JSON
         data_to_save = {
             dt: day.model_dump(by_alias=True, exclude_none=True) 
-            for dt, day in self.storage.items()
+            for dt, day in self.storage.days.items()
         }
         with open(FILE, 'w', encoding='utf-8') as f:
             json.dump(data_to_save, f, indent=2, ensure_ascii=False)
@@ -147,6 +152,24 @@ class FinanceManager():
             float: Сумма доходов и расходов по всем дням.
         """
         daily_balance = []
+        # Проходим по всем дням
         for i in self.storage.values():
+            # Баланс = доход + расход (если расход хранится как отрицательный)
             daily_balance.append(sum([i.total_income,i.total_expenses]))
         return sum(daily_balance)
+    
+    def prepare_graph_data(self):
+        """Читает JSON и упаковывает данные в объект GraphsData"""
+        
+        res = GraphsData()  # создаем переменную используя контейнер GraphsData 
+        lst_dates = sorted(self.storage.days.keys()) # собираем список дат
+        
+        for item in lst_dates:
+            data = self.storage.days[item] # берем дату 
+            format_date = date.fromisoformat(item).strftime("%d-%m-%Y") # форматируем дату под привычный формат
+            # закидываем данные в соответствующие контейнеры  
+            res.dates.append(format_date) 
+            res.expenses.append(data.total_expenses)
+            res.income.append(data.total_income)
+            res.common.append(data.total_income + data.total_expenses)
+        return res

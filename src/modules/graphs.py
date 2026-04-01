@@ -1,18 +1,18 @@
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from src.modules.data_manager import prepare_graph_data
+from src.modules.data_manager import FinanceManager
 
 class GraphService:
     """Сервис для генерации фигур Matplotlib"""
     
     def __init__(self):
         # Загружаем данные один раз при создании сервиса
-        self.data = prepare_graph_data()
-
+        self.data = FinanceManager().prepare_graph_data()
+        
     def build_all(self) -> Figure:
         """Создает комплексный график: Доходы, Расходы и Баланс"""
         fig = plt.figure() # Создаем НОВУЮ фигуру (чтобы не было наложений)
-        
+    
         # Рисуем три линии разными цветами
         plt.plot(self.data.dates, self.data.expenses, label="Расход", c="#AE0505", marker='o')
         plt.plot(self.data.dates, self.data.income, label="Доход", c="#008e18", marker='s')

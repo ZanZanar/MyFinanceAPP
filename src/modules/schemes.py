@@ -29,6 +29,7 @@ class Transaction(BaseModel):
 
 class DayData(BaseModel):
     """Модель данных для одного дня."""
+    
     model_config = ConfigDict(populate_by_name=True)
     total_income: float = Field(default=0.0, alias='общий доход')
     total_expenses: float = Field(default=0.0, alias='общий расход')
@@ -37,5 +38,5 @@ class DayData(BaseModel):
 
 class FinanceStorage(BaseModel):
     """Хранилище всех данных по датам."""
-
+    
     days: Dict[str, DayData] = Field(default_factory=dict) # Словарь: ключ - дата (строка), значение - объект DayData
